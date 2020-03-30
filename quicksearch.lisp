@@ -625,13 +625,13 @@ Note:
   (defparameter *description-indent-num* 6))
 
 (defun print-line (n char)
-  (format t (format nil "~~~D,,,'~AA" n char) char))
+  (format t "~a~&" (make-string n :initial-element char)))
 
 (defun print-title (word)
   (let ((title (format nil "~%SEARCH-RESULTS: ~S~%" word)))
     (format t "~a~&" title)
-    (format t "~a~&" (make-string (- (length title) 2)
-                                  :initial-element #\=))))
+    (format t "~a~&" (print-line (- (length title) 2)
+                                 #\=))))
 
 (defun gen-url (url source)
   (format nil (get source :host) url))
