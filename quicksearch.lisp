@@ -108,63 +108,83 @@ URL.")
 (defparameter *cut-off* 50)
 (defparameter *print-search-results?* nil)
 
-(defun quicksearch (search-word &key (?web         t)
-                                     (?description nil)
-                                     (?url         nil)
-                                     (?cut-off     50)
-                                     (?quicklisp   t)
-                                     (?cliki       t)
-                                     (?github      t)
-                                     (?bitbucket   t))
+(defun quicksearch (search-word &key
+                                  (?web         t   ?web-p)
+                                  (web          t)
+                                  (?description nil ?description-p)
+                                  (description  nil)
+                                  (?url         nil ?url-p)
+                                  (url          nil)
+                                  (?cut-off     50  ?cut-off-p)
+                                  (cut-off      50)
+                                  (?quicklisp   t   ?quicklisp-p)
+                                  (quicklisp    t)
+                                  (?cliki       t  ?cliki-p)
+                                  (cliki        t)
+                                  (?github      t  ?github-p)
+                                  (github       t)
+                                  (bitbucket    t)
+                                  (?bitbucket   t  ?bitbucket-p)
+                                  ;; no impact on the results:
+                                  ;; open all results in the browser?
+                                  (browse nil))
+  ;; 2020/03: ?key are deprecated.
 
   "Search for CL projects with `search-word' in Quicklisp, Cliki, GitHub
 and BitBucket. `search-word' must be a string, number or symbol (symbol
 will be automatically converted into downcase-string).
 
+QUICKSEARCH accepts arguments in their long form. The function `?' is
+an alias that accepts the same arguments with a short form, such as `:u'
+instead of `:url'.
+
 Keywords:
- * If `?web' is NIL, it does not search in Cliki, GitHub and BitBucket.
- * If `?quicklisp' is NIL, it does not search in Quicklisp (also
-   `?cliki', `?github', `?bitbucket').
+ * If `web' is NIL, it searches only on Quicklisp and does not search on Cliki, GitHub or BitBucket.
+ * If `quicklisp' is NIL, it does not search on Quicklisp (also
+   `cliki', `github', `bitbucket').
  * At least one search-space must be specified.
- * If `?description' is T, it displays project's descriptions (except
+ * If `description' is T, it displays project's descriptions (except
    for Quicklisp-search).
- * If `?url' is T, it display project's url.
- * `?cut-off' is the max number of printing repositories each space.
+ * If `url' is T, it display project's url.
+ * `cut-off' is the max number of printing repositories each space.
 
 Note:
- * keyword `?cut-off' controls only printing results, nothing to do with
+ * the keyword `cut-off' controls only printing results, nothing to do with
    the maximum number of fetching repositories (see. function CONFIG
    documentation).
 
  * About #\\Space in `search-word':
-   In case `search-word' contains #\\Space, Quicklisp-search is
-   OR-search, whereas Cliki-search, GitHub-, BitBucket- is AND-search.
+   When `search-word' contains a #\\Space, Quicklisp-search is
+   OR-searched, whereas Cliki-search, GitHub- and BitBucket- are AND-searched.
    e.g. (quicksearch \"foo bar\")
         Quicklisp-search for \"foo\" OR \"bar\",
         Cliki-search, GitHub-, BitBucket- for \"foo\" AND \"bar\"."
-  
+
+  (declare (ignore ?web ?description ?url ?cut-off ?quicklisp ?cliki ?github ?bitbucket))
+  (when (or ?web-p ?description-p ?url-p ?cut-off-p ?quicklisp-p ?cliki-p ?github-p ?bitbucket-p)
+    (error "Arguments starting with '?' have been deprecated. Please simply use :web, :description, :url, etc."))
   (check-type search-word  (or string symbol))
-  (check-type ?web         boolean)
-  (check-type ?description boolean)
-  (check-type ?url         boolean)
-  (check-type ?cut-off     (integer 1 *))
-  (check-type ?quicklisp   boolean)
-  (check-type ?cliki       boolean)
-  (check-type ?github      boolean)
-  (check-type ?bitbucket   boolean)
-  
-  (let ((*url-print?* ?url)
-        (*description-print?* ?description)
-        (*cut-off* ?cut-off)
+  (check-type web         boolean)
+  (check-type description boolean)
+  (check-type url         boolean)
+  (check-type cut-off     (integer 1 *))
+  (check-type quicklisp   boolean)
+  (check-type cliki       boolean)
+  (check-type github      boolean)
+  (check-type bitbucket   boolean)
+
+  (let ((*url-print?* url)
+        (*description-print?* description)
+        (*cut-off* cut-off)
         (word (write-to-string search-word :case :downcase :escape nil))
         (found? nil)
-        (*print-search-results?* nil)  ;no result, no print
+        (*print-search-results?* nil)   ;no result, no print
         (threads '()))
 
     (dolist (space '(cliki github bitbucket))
       (setf (get space :error-report) nil))
 
-    (when (and ?web *threading?* bordeaux-threads:*supports-threads-p*)
+    (when (and web *threading?* bordeaux-threads:*supports-threads-p*)
       ;; MAP Phase:
       ;; (Strictly, the following is not the MapReduce,
       ;;  but abstract model is the same if threads are equated with
@@ -172,14 +192,14 @@ Note:
       (let ((drakma:*drakma-default-external-format* :utf-8))
         ;; (print 'threading) ;for DBG
         (loop :for space   :in '(cliki github bitbucket)
-              :for search? :in (list ?cliki ?github ?bitbucket) :do
+           :for search? :in (list cliki github bitbucket) :do
            (when (and search? (not (in-cache-p word space)))
              ;; Search word in the web, and Store result into cache.
              ;; Since each space has its own cache, lock isn't need.
              (push (search-web-by-thread word space) threads)))))
 
-    #+quicklisp  ;for build
-    (when ?quicklisp
+    #+quicklisp                         ;for build
+    (when quicklisp
       ;; quicklisp-search is OR-search
       (dolist (w (ppcre:split " " word))
         (awhen (search-quicklisp w)
@@ -187,14 +207,14 @@ Note:
           (print-results it 'quicklisp)
           (setf found? t))))
 
-    (when ?web
+    (when web
       (if (and *threading?* bordeaux-threads:*supports-threads-p*)
-          (progn  ;REDUCE Phase:
+          (progn                        ;REDUCE Phase:
             ;; (print 'threading) ;for DBG
             (dolist (th threads) (bordeaux-threads:join-thread th))
             (loop
                :for space   :in '(cliki github bitbucket)
-               :for search? :in (list ?cliki ?github ?bitbucket) :do
+               :for search? :in (list cliki github bitbucket) :do
                (when search?
                  (aif (get space :error-report)
                       (progn
@@ -205,10 +225,10 @@ Note:
                           (once-only-print-search-results word)
                           (print-results serch-result space)
                           (setf found? t)))))))
-          
-          (loop  ;not using threads
+
+          (loop                         ;not using threads
              :for space   :in '(cliki github bitbucket)
-             :for search? :in (list ?cliki ?github ?bitbucket) :do
+             :for search? :in (list cliki github bitbucket) :do
              (when search?
                ;; (print 'non-threading) ;for DBG
                (multiple-value-bind
@@ -283,7 +303,7 @@ Note:
 (progn
 
   (defparameter *installed-prefix* "!")
-  
+
   (defun search-quicklisp (word)
     (loop
        :for sys :in (ql-dist:provided-systems t)
@@ -303,7 +323,7 @@ Note:
     (if (and *quicklisp-verbose?* (installed-p sys))
         (str *installed-prefix* (ql-dist:name sys))
         (ql-dist:name sys)))
-  
+
   (defun installed-p (sys)
     (handler-case (not (ql-dist:check-local-archive-file
                         (ql-dist:release sys)))
@@ -328,7 +348,7 @@ Note:
   (defun set-version (sys)
     (setf (get 'quicklisp :name)
           (str "Quicklisp: " (ql-dist:version (ql-dist:dist sys)))))
-  
+
   (defun get-quickdocs-url (sys)
     (format nil "http://quickdocs.org/~A/"
             (ql-dist:name (ql-dist:release sys))))
@@ -485,7 +505,7 @@ Note:
   #-#:Error-2014-04-08
   (etypecase response
     (STRING response)
-    (VECTOR 
+    (VECTOR
      (flexi-streams:octets-to-string response :external-format :utf-8))))
 
 ;; github api-v3 search
@@ -764,7 +784,7 @@ Note:
           (format t "~&Default Setting.")
           (setf result t))
         (progn
-          
+
           (when max-cols-supplied?
             (check-type max-cols (not (mod #.(1+ *description-indent-num*))))
             (setf *max-num-description-columns* max-cols)
@@ -779,21 +799,21 @@ Note:
             (format t "~&Current maximum number of fetching repositories: ~D"
                     *max-num-web-search-results*)
             (setf result t))
-          
+
           (when cache-size-supplied?
             (check-type cache-size (integer 0 *))
             (setf *cache-size* cache-size)
             (make-cache)
             (format t "~&Current cache size: ~D"  *cache-size*)
             (setf result t))
-          
+
           (when clear-cache-supplied?
             (check-type clear-cache? boolean)
             (when clear-cache?
               (clear-cache)
               (format t "All caches cleaned.")
               (setf result t)))
-          
+
           (when threading-supplied?
             (check-type threading? boolean)
             (if (and threading? (not bordeaux-threads:*supports-threads-p*))
@@ -802,7 +822,7 @@ Note:
                   (setf *threading?* threading?)
                   (format t "~&Using threads for searching: ~S" threading?)
                   (setf result t))))
-          
+
           (when quicklisp-verbose-supplied?
             (check-type quicklisp-verbose? boolean)
             (setf *quicklisp-verbose?* quicklisp-verbose?)
@@ -821,7 +841,7 @@ Note:
 
 (defun ? (search-word &rest options)
 
-  "? is abbreviation wrapper for function QUICKSEARCH.
+  "? is an abbreviation wrapper for the function QUICKSEARCH.
 `search-word' must be a string, number or symbol. `options' must be a
 non-negative integer (as Cut-Off) and/or some keywords which consists of
 some Option-Chars.

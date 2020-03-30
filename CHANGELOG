@@ -4,6 +4,12 @@ Last modified: 2014-04-13 12:04:58 tkych
  Change Log for Quicksearch
 ======================================================================
 
+Version dev
+2020-03-30
+quicksearch: key arguments that start with a '?' are marked deprecated.
+             Using them will throw an error with an explanation.
+	     Use the same ones, without the '?'.
+
 Version 0.1.04 (beta)
 2014-04-13
 Fix Bug : A string is given to `flexi-streams:octets-to-string'.

@@ -8,12 +8,15 @@ Quicksearch
 
 Quicksearch is a search-engine-interface for Common Lisp.
 The goal of Quicksearch is to find the CL library quickly.
-For example, if you will find the library about json, just type `(qs:? 'json)` at REPL.
+For example, if you want to find libraries about json, just type `(qs:? 'json)`
+at the REPL.
 
-The function `quicksearch` searches for CL projects in Quicklisp, Cliki,
-GitHub and BitBucket, then outputs results in REPL.
-The function `?` is abbreviation wrapper for `quicksearch`.
+The function `quicksearch` searches for CL projects on Quicklisp, Cliki,
+GitHub and BitBucket, then outputs results in the REPL.
+The function `?` is an abbreviation wrapper for `quicksearch`.
 
+`quicksearch` accepts arguments in a long form: `:url`, `:description`,
+etc, and `?` has the same in their short form: `:u`, `:d`, and they are agglutinated: `(qs:? :ud)`.
 
 Depends-on
 ----------
@@ -28,7 +31,7 @@ Depends-on
  * [yason](http://common-lisp.net/project/yason/)
  * [flexi-streams](http://weitz.de/flexi-streams/)
  * [do-urlencode](https://github.com/drdo/do-urlencode)
- 
+
 
 Installation
 ------------
