@@ -79,7 +79,7 @@ Note:
 ;; Main
 ;;--------------------------------------------------------------------
 ;; <word>  ::= <string>
-;; <space> ::= <symbol>, s.t. {quicklisp | github | cliki | bitbucket}
+;; <source> ::= <symbol>, s.t. {quicklisp | github | cliki | bitbucket}
 ;; <repo>  ::= (<title> <url> <description>)
 ;; <repos> ::= (<repo>*)
 ;; <title> ::= <string>
@@ -142,11 +142,11 @@ Keywords:
  * If `web' is NIL, it searches only on Quicklisp and does not search on Cliki, GitHub or BitBucket.
  * If `quicklisp' is NIL, it does not search on Quicklisp (also
    `cliki', `github', `bitbucket').
- * At least one search-space must be specified.
+ * At least one search-source must be specified.
  * If `description' is T, it displays project's descriptions (except
    for Quicklisp-search).
  * If `url' is T, it display project's url.
- * `cut-off' is the max number of printing repositories each space.
+ * `cut-off' is the max number of printing repositories each source.
 
 Note:
  * the keyword `cut-off' controls only printing results, nothing to do with
@@ -181,8 +181,8 @@ Note:
         (*print-search-results?* nil)   ;no result, no print
         (threads '()))
 
-    (dolist (space '(cliki github bitbucket))
-      (setf (get space :error-report) nil))
+    (dolist (source '(cliki github bitbucket))
+      (setf (get source :error-report) nil))
 
     (when (and web *threading?* bordeaux-threads:*supports-threads-p*)
       ;; MAP Phase:
@@ -191,12 +191,12 @@ Note:
       ;;  worker nodes.)
       (let ((drakma:*drakma-default-external-format* :utf-8))
         ;; (print 'threading) ;for DBG
-        (loop :for space   :in '(cliki github bitbucket)
+        (loop :for source   :in '(cliki github bitbucket)
            :for search? :in (list cliki github bitbucket) :do
-           (when (and search? (not (in-cache-p word space)))
+           (when (and search? (not (in-cache-p word source)))
              ;; Search word in the web, and Store result into cache.
-             ;; Since each space has its own cache, lock isn't need.
-             (push (search-web-by-thread word space) threads)))))
+             ;; Since each source has its own cache, lock isn't need.
+             (push (search-web-by-thread word source) threads)))))
 
     #+quicklisp                         ;for build
     (when quicklisp
@@ -213,10 +213,10 @@ Note:
             ;; (print 'threading) ;for DBG
             (dolist (th threads) (bordeaux-threads:join-thread th))
             (loop
-               :for space   :in '(cliki github bitbucket)
+               :for source   :in '(cliki github bitbucket)
                :for search? :in (list cliki github bitbucket) :do
                (when search?
-                 (aif (get space :error-report)
+                 (aif (get source :error-report)
                       (progn
                         (once-only-print-search-results word)
                         (princ it))
@@ -227,16 +227,16 @@ Note:
                           (setf found? t)))))))
 
           (loop                         ;not using threads
-             :for space   :in '(cliki github bitbucket)
+             :for source   :in '(cliki github bitbucket)
              :for search? :in (list cliki github bitbucket) :do
              (when search?
                ;; (print 'non-threading) ;for DBG
                (multiple-value-bind
-                     (repos stored?) (search-cache word space)
+                     (repos stored?) (search-cache word source)
                  (if stored?
                      (progn
                        (once-only-print-search-results word)
-                       (print-results repos space)
+                       (print-results repos source)
                        (setf found? t))
                      ;; fetch before get error-report
                      (let ((search-result (search-web word source)))
@@ -253,10 +253,10 @@ Note:
 
 
 ;;--------------------------------------------------------------------
-;; Search Spaces
+;; Search Sources
 ;;--------------------------------------------------------------------
 
-;; for print search-space name
+;; for print search-source name
 (setf (get 'quicklisp :name) "Quicklisp"
       (get 'cliki     :name) "Cliki"
       (get 'github    :name) "GitHub"
@@ -360,7 +360,7 @@ Note:
 ;; Search-Cache
 ;;--------------------------------------------------------------------
 ;; <cache> ::= <hashtable> stored previous search results.
-;;             For non-lock threads, each space has its own cache in
+;;             For non-lock threads, each source has its own cache in
 ;;             symbol-plist.
 ;;             max-size = *cache-size* + 1
 ;;             [key, val] = {[<word>, <repos>] | [:history, <history>]}
@@ -381,93 +381,93 @@ Note:
 (make-cache)
 
 (defun clear-cache ()
-  (dolist (space '(cliki github bitbucket))
-    (clrhash (get space :cache)))
+  (dolist (source '(cliki github bitbucket))
+    (clrhash (get source :cache)))
   t)
 
-(defun search-cache (word space)
-  (gethash word (get space :cache) nil))
+(defun search-cache (word source)
+  (gethash word (get source :cache) nil))
 
-(defun in-cache-p (word space)
-  (nth-value 1 (gethash word (get space :cache) nil)))
+(defun in-cache-p (word source)
+  (nth-value 1 (gethash word (get source :cache) nil)))
 
-(defun store-cache (word repos space)
-  (let* ((cache   (get space :cache))
+(defun store-cache (word repos source)
+  (let* ((cache   (get source :cache))
          (history (gethash :history cache '())))
     ;; If cache is full, then remove the most old one
     (when (<= *cache-size* (length history))
       (remhash (pop history) cache))
-    (setf (gethash word (get space :cache))
+    (setf (gethash word (get source :cache))
           repos)
-    (setf (gethash :history (get space :cache))
+    (setf (gethash :history (get source :cache))
           (append history (list word)))))
 
 
 ;;--------------------------------------------------------------------
 ;; Search-Web
 ;;--------------------------------------------------------------------
-;; 1. FETCH word from space
+;; 1. FETCH word from source
 ;; 2. EXTRACT repos from response
 ;; 3. GOTO 1 if next page exists (word <-- next-url)
 ;; 4. STORE repos in cache
 ;; 5. RETURN repos
 
-(defun search-web (word space)
+(defun search-web (word source)
   (let* ((response (handler-case
-                       (fetch (gen-query word space) space)
+                       (fetch (gen-query word source) source)
                      (error (c)
                        (RETURN-FROM search-web
                          (progn
-                           (setf (get space :error-report)
+                           (setf (get source :error-report)
                                  (format nil "~2& ~A~%  Failed [~S]~%"
-                                         (get space :name)
+                                         (get source :name)
                                          (class-name (class-of c))))
                            nil)))))
-         (repos    (extract-repos response space)))
-    (awhen (extract-next-page-url response space)
+         (repos    (extract-repos response source)))
+    (awhen (extract-next-page-url response source)
       (if *threading?*
           (alexandria:appendf repos
             (map-reduce #'append
                         (lambda (url)
-                          (extract-repos (fetch url space) space))
+                          (extract-repos (fetch url source) source))
                         it))
           (loop
              :for url :in it
-             :for res := (fetch url space)
+             :for res := (fetch url source)
              :do (alexandria:appendf
-                  repos (extract-repos res space)))))
-    (store-cache word repos space)
+                  repos (extract-repos res source)))))
+    (store-cache word repos source)
     repos))
 
-(defun search-web-by-thread (word space)
+(defun search-web-by-thread (word source)
   (bordeaux-threads:make-thread
-   (lambda () (search-web word space))
-   :name (format nil "~(~A~)-search" space)))
+   (lambda () (search-web word source))
+   :name (format nil "~(~A~)-search" source)))
 
 
 ;;--------------------------------------
 ;; github api-v3 search
-(defun gen-query (word space)
-  (format nil (get space :query-format)
-          (if (eq space 'github)
+(defun gen-query (word source)
+  (format nil (get source :query-format)
+          (if (eq source 'github)
               (do-urlencode:urlencode word)
               (nsubstitute #\+ #\Space word :test #'char=))))
 
 ;; github advanced search
-;; (defun gen-query (word space)
-;;   (format nil (get space :query-format)
+;; (defun gen-query (word source)
+;;   (format nil (get source :query-format)
 ;;           (nsubstitute #\+ #\Space word :test #'char=)))
 
-(defun fetch (query space)
+(defun fetch (query source)
   (apply #'drakma:http-request query
-         :user-agent *user-agent* (get space :drakma-options)))
+         :user-agent *user-agent* (get source :drakma-options)))
 
 
 ;;--------------------------------------
 ;; dispatch for extract repositories
 
-(defun extract-repos (response space)
-  (case space
+(defun extract-repos (response source)
+  (case source
     (cliki     (extract-cliki-repos response))
     (github    (extract-github-repos response))
     (bitbucket (extract-bitbucket-repos response))))
@@ -558,8 +558,8 @@ Note:
 
 ;;--------------------------------------
 ;; dispatch for extracting next url
-(defun extract-next-page-url (response space)
-  (case space
+(defun extract-next-page-url (response source)
+  (case source
     (cliki     (extract-cliki-next-page-url response))
     (github    (extract-github-next-page-url response))
     (bitbucket (extract-bitbucket-next-page-url response))))
@@ -635,13 +635,13 @@ Note:
      #\=)
     (terpri)))
 
-(defun gen-url (url space)
-  (format nil (get space :host) url))
+(defun gen-url (url source)
+  (format nil (get source :host) url))
 
-(defun print-space (space)
-  (format t "~% ~A~%" (get space :name))
+(defun print-source (source)
+  (format t "~% ~A~%" (get source :name))
   (when (or *description-print?* *url-print?*)
-    (format t " ") (print-line (length (get space :name)) #\-)))
+    (format t " ") (print-line (length (get source :name)) #\-)))
 
 (defun once-only-print-search-results (word)
   ;; only when search-result has not printed yet, print it.
@@ -649,14 +649,14 @@ Note:
     (print-search-results word)
     (setf *print-search-results?* t)))
 
-(defun print-results (repos space)
+(defun print-results (repos source)
   (when repos
-    (print-space space)
+    (print-source source)
     (loop :for (title url desc) :in repos
           :repeat *cut-off* :do
        (format t "~&  ~A" (html-entities:decode-entities title))
        (when *url-print?*
-         (format t "~%      ~A" (gen-url url space)))
+         (format t "~%      ~A" (gen-url url source)))
        (when *description-print?*
          (pprint-description
           (html-entities:decode-entities desc))))
@@ -672,17 +672,17 @@ Note:
                          *description-indent-num*)))
       (if (<= len max-nchars)
           (format t "~%      ~A" desc)
-          (let ((space-pos
+          (let ((source-pos
                  (loop :for i :downfrom max-nchars :to 0
                        :until (char= #\Space (char desc i))
                        :finally (return (1+ i)))))
-            (if (zerop space-pos)
+            (if (zerop source-pos)
                 (progn
                   (format t "~%      ~A-" (subseq desc 0 (1- max-nchars)))
                   (pprint-description (subseq desc (1- max-nchars))))
                 (progn
-                  (format t "~%      ~A" (subseq desc 0 (1- space-pos)))
-                  (pprint-description (subseq desc space-pos)))))))))
+                  (format t "~%      ~A" (subseq desc 0 (1- source-pos)))
+                  (pprint-description (subseq desc source-pos)))))))))
 
 
 ;;--------------------------------------------------------------------
@@ -713,13 +713,13 @@ Keywords:
    This value controls the number of fetching repositories.
    The value must be a plus integer.
    Increasing this value, the number of fetching repositories increases,
-   but also space & time does.
+   but also source & time does.
 
  * `:cache-size'
    The value must be a plus integer (default 4).
    This value is the number of stored previous search-results.
    Increasing this value, the number of caching results increases, but
-   also space does.
+   also source does.
 
  * `:clear-cache?'
    The value must be a boolean (default NIL).
@@ -864,9 +864,9 @@ Note:
    (e.g. :du <=> :ud).
  * The order of `options' is nothing to do with output
    (except for some Cut-Offs).
- * If no search-space is specified, all spaces are specified
+ * If no search-source is specified, all sources are specified
    (e.g. :d <=> :dqcgb).
- * If at most one search-space is specified, then others are not
+ * If at most one search-source is specified, then others are not
    specified.
 
 Examples:
