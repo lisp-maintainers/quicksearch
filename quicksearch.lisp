@@ -106,7 +106,7 @@ URL.")
 (defparameter *description-print?* nil)
 (defparameter *url-print?* nil)
 (defparameter *cut-off* 50)
-(defparameter *print-search-results?* nil)
+(defparameter *print-title?* nil)
 
 (defun quicksearch (search-word &key
                                   (?web         t   ?web-p)
@@ -178,7 +178,7 @@ Note:
         (*cut-off* cut-off)
         (word (write-to-string search-word :case :downcase :escape nil))
         (found? nil)
-        (*print-search-results?* nil)   ;no result, no print
+        (*print-title?* nil)   ;no result, no print
         (threads '()))
 
     (dolist (source '(cliki github bitbucket))
@@ -627,13 +627,11 @@ Note:
 (defun print-line (n char)
   (format t (format nil "~~~D,,,'~AA" n char) char))
 
-(defun print-search-results (word)
-  (format t "~%SEARCH-RESULTS: ~S~%" word)
-  (when (or *description-print?* *url-print?*)
-    (print-line
-     (+ #.(length "SEARCH-RESULTS: \"\"") (length word))
-     #\=)
-    (terpri)))
+(defun print-title (word)
+  (let ((title (format nil "~%SEARCH-RESULTS: ~S~%" word)))
+    (format t "~a~&" title)
+    (format t "~a~&" (make-string (- (length title) 2)
+                                  :initial-element #\=))))
 
 (defun gen-url (url source)
   (format nil (get source :host) url))
@@ -645,9 +643,9 @@ Note:
 
 (defun once-only-print-search-results (word)
   ;; only when search-result has not printed yet, print it.
-  (unless *print-search-results?*
-    (print-search-results word)
-    (setf *print-search-results?* t)))
+  (unless *print-title?*
+    (print-title word)
+    (setf *print-title?* t)))
 
 (defun print-results (repos source)
   (when repos
