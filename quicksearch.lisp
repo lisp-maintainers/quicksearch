@@ -220,10 +220,10 @@ Note:
                       (progn
                         (once-only-print-search-results word)
                         (princ it))
-                      (let ((serch-result (search-cache word space)))
-                        (when serch-result
+                      (let ((search-result (search-cache word source)))
+                        (when search-result
                           (once-only-print-search-results word)
-                          (print-results serch-result space)
+                          (print-results search-result source)
                           (setf found? t)))))))
 
           (loop                         ;not using threads
@@ -238,16 +238,16 @@ Note:
                        (once-only-print-search-results word)
                        (print-results repos space)
                        (setf found? t))
-                     ;; fatch before get error-report
-                     (let ((serch-result (search-web word space)))
-                       (aif (get space :error-report)
+                     ;; fetch before get error-report
+                     (let ((search-result (search-web word source)))
+                       (aif (get source :error-report)
                             (progn
                               (once-only-print-search-results word)
                               (princ it))
-                            (when serch-result
-                              (once-only-print-search-results word)
-                              (print-results serch-result space)
-                              (setf found? t))))))))))
+                           (when search-result
+                             (once-only-print-search-results word)
+                             (print-results search-result source)
+                             (setf found? t))))))))))
 
     found?))
 
