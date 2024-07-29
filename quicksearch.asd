@@ -25,8 +25,7 @@
   :version     "0.1.03"
   :licence     "MIT License"
   :author      "Takaya OCHIAI <tkych.repl@gmail.com>"
-  :depends-on  (#:iterate
-                 #:bordeaux-threads
+  :depends-on  (#:bordeaux-threads
                  #:anaphora
                  #:alexandria
                  #:cl-ppcre

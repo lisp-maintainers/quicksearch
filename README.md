@@ -20,7 +20,6 @@ Depends-on
 ----------
 
  * [bordeaux-threads](http://common-lisp.net/project/bordeaux-threads/)
- * [iterate](http://common-lisp.net/project/iterate/)
  * [alexandria](http://common-lisp.net/project/alexandria/)
  * [anaphora](http://common-lisp.net/project/anaphora/)
  * [cl-ppcre](http://weitz.de/cl-ppcre/)

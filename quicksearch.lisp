@@ -11,7 +11,6 @@
 
 (defpackage #:quicksearch
   (:nicknames #:qs)
-  (:use :cl :iterate)
   (:import-from #:anaphora
                 #:aif #:awhen #:it)
   (:export #:quicksearch
@@ -492,13 +491,15 @@ Note:
          (repos (ppcre:all-matches-as-strings
                  "(?s)<li>(.+?)</li>" results)))
     (when repos
-      (iter (for repo :in repos)
+      (loop :for repo :in repos
+            :collect
             (ppcre:register-groups-bind (url title description)
                 ("(?s)<li><a href=\"(.+?)\" class=\"internal\">(.+?)</a>\\s?<br\\s?/?>(.+?)</li>"
                  repo)
-              (collect (list title url
+              (list title url
                              (let ((desc (strip (remove-tags description))))
-                               (when (string/= "" desc) desc)))))))))
+                               (when (string/= "" desc) desc))))))))
+
 
 ;; Memo: 2014-04-13 by tkych
 ;;  Adding `response-string' is to fix the bug which is caused that a string
@@ -554,15 +555,15 @@ Note:
                  "(?s)<article class=\"repo-summary\">(.+?)</article>"
                  results)))
     (when repos
-      (iter (for repo :in repos)
+      (loop :for repo :in repos
+            :collect
             (ppcre:register-groups-bind (url title)
                 ("(?s)<a class=\"repo-link\" href=\"(.+?)\">.+? / (.+?)</a>"
                  repo)
-              (collect (list title url
-                             (ppcre:register-groups-bind (description)
-                                 ("(?s)<p>(.+?)</p>" repo)
-                               (strip (remove-tags description))))))))))
-
+              (list title url
+                    (ppcre:register-groups-bind (description)
+                        ("(?s)<p>(.+?)</p>" repo)
+                      (strip (remove-tags description)))))))))
 
 ;;--------------------------------------
 ;; dispatch for extracting next url
