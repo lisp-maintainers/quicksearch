@@ -105,7 +105,9 @@ URL.")
 (defvar *threading?* t)
 (defparameter *description-print?* nil)
 (defparameter *url-print?* nil)
-(defparameter *cut-off* 50)
+(defparameter *cut-off* 50 "The maximum number of results to print, for each source.
+
+This parameter doesn't control the number of HTTP requests.")
 (defparameter *print-title?* nil)
 
 (defun quicksearch (search-word &key
@@ -146,7 +148,7 @@ Keywords:
  * If `description' is T, it displays project's descriptions (except
    for Quicklisp-search).
  * If `url' is T, it display project's url.
- * `cut-off' is the max number of printing repositories each source.
+ * `cut-off' is the max number of printing repositories for each source.
 
 Note:
  * the keyword `cut-off' controls only printing results, nothing to do with
@@ -888,7 +890,7 @@ Examples:
   (quicksearch \"crypt\" :description T :url nil :cut-off 20
                        :quicklisp nil :cliki nil :github T :bitbucket nil)"
 
-  (let ((cut-off 50)
+  (let ((cut-off *cut-off*)
         (d nil) (u nil) (q nil) (c nil) (g nil) (b nil))
     (dolist (opt options)
       (cond ((keywordp opt)
