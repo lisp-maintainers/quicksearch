@@ -4,7 +4,7 @@ Last modified: 2014-04-13 12:04:58 tkych
  Change Log for Quicksearch
 ======================================================================
 
-Version dev
+Version dev, on github.com/lisp-maintainers/quicksearch
 2020-03-30
 quicksearch: key arguments that start with a '?' are marked deprecated.
              Using them will throw an error with an explanation.

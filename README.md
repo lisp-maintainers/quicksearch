@@ -1,14 +1,10 @@
-Last modified: 2014-04-13 12:00:30 tkych
-
-Version: 0.01.04 (beta)
-
 
 Quicksearch
 ===========
 
 Quicksearch is a search-engine-interface for Common Lisp.
 The goal of Quicksearch is to find the CL library quickly.
-For example, if you want to find libraries about json, just type `(qs:? 'json)`
+For example, if you want to find libraries about json, just type `(qs:? "json")`
 at the REPL.
 
 The function `quicksearch` searches for CL projects on Quicklisp, Cliki,
@@ -17,6 +13,8 @@ The function `?` is an abbreviation wrapper for `quicksearch`.
 
 `quicksearch` accepts arguments in a long form: `:url`, `:description`,
 etc, and `?` has the same in their short form: `:u`, `:d`, and they are agglutinated: `(qs:? :ud)`.
+
+Quicksearch was created by @tkych: [https://github.com/tkych/quicksearch](https://github.com/tkych/quicksearch).
 
 Depends-on
 ----------
@@ -386,7 +384,6 @@ TODO
 ----
 
 - ADD search-space: Common-Lisp.net
-- ADD search-space: Google code
 
 
 Author, License, Copyright
