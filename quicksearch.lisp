@@ -838,50 +838,55 @@ Note:
 ;;--------------------------------------------------------------------
 
 (defun ? (search-word &rest options)
-
   "? is an abbreviation wrapper for the function QUICKSEARCH.
+
+Search options can be aggregated has letters in one keyword. Example:
+
+(qs:? \"foo\" :ud)
+
+is expanded as:
+
+(qs:quicksearch \"foo\" :url t :description t)
+
 `search-word' must be a string, number or symbol. `options' must be a
 non-negative integer (as Cut-Off) and/or some keywords which consists of
 some Option-Chars.
 
 Options:
- * Cut-Off:
-   * The max number of printing results (default is 50).
- * Option-Chars:
-   * d, D -- output Description
-   * u, U -- output URL
-   * q, Q -- search in Quicklisp
-   * c, C -- search in Cliki
-   * g, G -- search in GitHub
-   * b, B -- search in Bitbucket
+ * :cut-off:
+   * The max number of printing results (default is 50). See also `*cut-off*'.
+ * one-letter options (case doesn't matter):
+   * d -- output Description
+   * u -- output URL
+   * q -- search in Quicklisp
+   * c -- search in Cliki
+   * g -- search in GitHub
+   * b -- search in Bitbucket
 
 Note:
  * Option-Char is idempotent (e.g. :dd <=> :d).
- * If `options' contains more than 2 Cut-Offs, only last one is applyed.
- * The order of Option-Chars is nothing to do with output
-   (e.g. :du <=> :ud).
- * The order of `options' is nothing to do with output
-   (except for some Cut-Offs).
+ * If `options' contains more than 2 :cut-off options, only the last one is applied.
+ * The order of options doesn't matter (e.g. :du <=> :ud).
  * If no search-source is specified, all sources are specified
    (e.g. :d <=> :dqcgb).
- * If at most one search-source is specified, then others are not
+ * If at most one search-source is specified, then the others are not
    specified.
 
 Examples:
   (? \"crypt\")
   <=>
-  (quicksearch \"crypt\" :?description nil :?url nil :?cut-off 50
-                       :?quicklisp t :?cliki t :?github t :?bitbucket t)
+  (quicksearch \"crypt\" :description nil :url nil :cut-off 50
+                       :quicklisp t :cliki t :github t :bitbucket t)
 
   (? \"crypt\" :du 10)
   <=>
-  (quicksearch \"crypt\" :?description T :?url T :?cut-off 10
-                       :?quicklisp t :?cliki t :?github t :?bitbucket t)
+  (quicksearch \"crypt\" :description T :url T :cut-off 10
+                       :quicklisp t :cliki t :github t :bitbucket t)
 
   (? \"crypt\" 20 :g :d)
   <=>
-  (quicksearch \"crypt\" :?description T :?url nil :?cut-off 20
-                       :?quicklisp nil :?cliki nil :?github T :?bitbucket nil)"
+  (quicksearch \"crypt\" :description T :url nil :cut-off 20
+                       :quicklisp nil :cliki nil :github T :bitbucket nil)"
 
   (let ((cut-off 50)
         (d nil) (u nil) (q nil) (c nil) (g nil) (b nil))
@@ -903,11 +908,11 @@ Examples:
                     opt))))
     (if (or q c g b)
         (quicksearch search-word
-                     :?description d :?url u :?cut-off cut-off
-                     :?quicklisp q :?cliki c :?github g :?bitbucket b)
+                     :description d :url u :cut-off cut-off
+                     :quicklisp q :cliki c :github g :bitbucket b)
         (quicksearch search-word
-                     :?description d :?url u :?cut-off cut-off
-                     :?quicklisp T :?cliki T :?github T :?bitbucket T))))
+                     :description d :url u :cut-off cut-off
+                     :quicklisp T :cliki T :github T :bitbucket T))))
 
 
 ;;====================================================================
