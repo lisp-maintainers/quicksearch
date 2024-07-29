@@ -102,20 +102,25 @@ should change the value of *USER-AGENT* to your application name and
 URL.")
 
 (defvar *threading?* t)
-(defparameter *description-print?* nil)
-(defparameter *url-print?* nil)
-(defparameter *cut-off* 50 "The maximum number of results to print, for each source.
 
+(defparameter *description-print?* t "Print the projects' short description by default.
+There is currently no keyword argument to change them per quicksearch and qs:? calls.")
+
+(defparameter *url-print?* t "Print the projects' URL by default.
+There is currently no keyword argument to change them per quicksearch and qs:? calls.")
+
+(defparameter *cut-off* 50 "The maximum number of results to print, for each source.
 This parameter doesn't control the number of HTTP requests.")
+
 (defparameter *print-title?* nil)
 
 (defun quicksearch (search-word &key
                                   (?web         t   ?web-p)
                                   (web          t)
                                   (?description nil ?description-p)
-                                  (description  nil)
+                                  (description  *description-print?*)
                                   (?url         nil ?url-p)
-                                  (url          nil)
+                                  (url          *url-print?*)
                                   (?cut-off     50  ?cut-off-p)
                                   (cut-off      50)
                                   (?quicklisp   t   ?quicklisp-p)
@@ -128,7 +133,8 @@ This parameter doesn't control the number of HTTP requests.")
                                   (?bitbucket   t  ?bitbucket-p)
                                   ;; no impact on the results:
                                   ;; open all results in the browser?
-                                  (browse nil))
+                                  ;; (browse nil)
+                                  )
   ;; 2020/03: ?key are deprecated.
 
   "Search for CL projects with `search-word' in Quicklisp, Cliki, GitHub
@@ -898,7 +904,12 @@ Examples:
                        :quicklisp nil :cliki nil :github T :bitbucket nil)"
 
   (let ((cut-off *cut-off*)
-        (d nil) (u nil) (q nil) (c nil) (g nil) (b nil))
+        (d *description-print?*)
+        (u *url-print?*)
+        (q nil)
+        (c nil)
+        (g nil)
+        (b nil))
     (dolist (opt options)
       (cond ((keywordp opt)
              (loop :for char :across (symbol-name opt) :do

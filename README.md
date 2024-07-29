@@ -3,7 +3,7 @@ Quicksearch
 ===========
 
 Quicksearch is a search-engine-interface for Common Lisp.
-The goal of Quicksearch is to find the CL library quickly.
+The goal of Quicksearch is to find a CL library quickly.
 For example, if you want to find libraries about json, just type `(qs:? "json")`
 at the REPL.
 
@@ -11,10 +11,13 @@ The function `quicksearch` searches for CL projects on Quicklisp, Cliki,
 GitHub and BitBucket, then outputs results in the REPL.
 The function `?` is an abbreviation wrapper for `quicksearch`.
 
-`quicksearch` accepts arguments in a long form: `:url`, `:description`,
-etc, and `?` has the same in their short form: `:u`, `:d`, and they are agglutinated: `(qs:? :ud)`.
+`quicksearch` accepts arguments in a long form: `:url`,
+`:description`, etc, and `?` has the same in their short form: `:u`,
+`:d`, and they are agglutinated: `(qs:? :gq)` to limit the search to `:github` and `:quicklisp`.
 
 Quicksearch was created by @tkych: [https://github.com/tkych/quicksearch](https://github.com/tkych/quicksearch).
+
+About this fork: see our CHANGELOG.
 
 Depends-on
 ----------
@@ -53,6 +56,75 @@ Installation
 Examples
 --------
 
+##### Simple search:
+
+    CL-REPL> (qs:? "crypt") ;<=> (qs:quicksearch "crypt")
+
+    SEARCH-RESULTS: "crypt"
+
+     Quicklisp
+     ---------
+      crypt
+          http://beta.quicklisp.org/archive/cl-crypt/2012-05-20/cl-crypt-20120520-git.tgz
+          http://quickdocs.org/cl-crypt/
+      crypto-shortcuts
+          http://beta.quicklisp.org/archive/crypto-shortcuts/2020-10-16/crypto-shortcuts-20201016-git.tgz
+          http://quickdocs.org/crypto-shortcuts/
+      ironclad/kdf/bcrypt
+          http://beta.quicklisp.org/archive/ironclad/2022-11-06/ironclad-v0.58.tgz
+          http://quickdocs.org/ironclad/
+
+     […]
+
+     Cliki
+     -----
+     ARC4
+         http://www.cliki.net/ARC4
+         A Common Lisp implementation of ARC4 (trademark: RC4), a stream cipher,
+         can be found below
+     JARW
+         http://www.cliki.net/JARW
+         Dr John AR Williams' utilities
+     VLM_on_Linux
+         http://www.cliki.net/VLM_on_Linux
+         This page gives some additional hints on running the Symbolics Virtual
+         Lisp Machine (VLM) port to
+
+     GitHub
+     ------
+        crypto-shortcuts
+            https://github.com/Shinmera/crypto-shortcuts
+            Collection of common cryptography functions
+        cl-crypt
+            https://github.com/renard/cl-crypt
+            Common-Lisp implementation of unix crypt function
+        cl-crypto
+            https://github.com/billstclair/cl-crypto
+            Pure lisp crypto, written from specs
+        cryptopoem
+            https://github.com/daniel-cussen/cryptopoem
+            Analysis for Virgil's cryptographic epic poem, the Aeneid
+
+      […]
+
+    T
+
+ * If search-results is not null, then results are printed and return T.
+ * Since bitbucket-result is null, it is not printed.
+
+
+##### URL, description:
+
+Quicksearch printed the projects' short description and their URL by default.
+
+To not print them, set their variables to NIL: `*url-print?*` and `*description-print?*`.
+
+    CL-REPL> (qs:? "crypt") ;<=> (qs:quicksearch "crypt" :description t :url t)
+
+ * A symbol (as search-word) is automatically converted into a downcase-string.
+ * The function QUICKSEARCH's options are redundant, but explanatory.
+ * The function ?'s options are not explanatory, but minimum.
+
 ##### Null result:
 
     CL-REPL> (qs:? "supercalifragilisticexpialidocious") ;<=> (qs:quicksearch "supercalifragilisticexpialidocious")
@@ -63,82 +135,17 @@ Examples
  * If search-results is null, then just return NIL.
 
 
-##### Simple search:
+##### Search targets, max printed projects
 
-    CL-REPL> (qs:? "crypt") ;<=> (qs:quicksearch "crypt")
+You can use long and short parameters to specify where to search.
 
-    SEARCH-RESULTS: "crypt"
+Quicksearch defaults to GitHub, Quicklisp, Cliki and bitbucket.
 
-     Quicklisp
-      crypt
+Only search on GitHub with a short `:g` option, and limit the number of printed results to 4:
 
-     Cliki
-      ARC4
-      JARW
-      VLM_on_Linux
-
-     GitHub
-      cl-crypt
-      cl-crypto
-      cl-crypto
-      cryptography
-      cryptoschool
-      Cryptopsaras
-    T
-
- * If search-results is not null, then results are printed and return T.
- * Since bitbucket-result is null, it is not printed.
-
-
-##### Description:
-
-    CL-REPL> (qs:? 'Crypt :d) ;<=> (qs:quicksearch 'Crypt :?description t)
-
-    SEARCH-RESULTS: "crypt"
-    =======================
-
-     Quicklisp
-     ---------
-      crypt
-          http://quickdocs.org/cl-crypt/
-
-     Cliki
-     -----
-      ARC4
-          A Common Lisp implementation of ARC4, a Cryptography code, can be found on
-          the
-      JARW
-          Dr John AR Williams' utilities
-      VLM_on_Linux
-          Instructions for running the Symbolics VLM virtual machine on Linux
-
-     GitHub
-     ------
-      cl-crypt
-          Common-Lisp implementation of unix crypt function
-      cl-crypto
-          A common lisp package of ciphers, public-key algorithms, etc.
-      cl-crypto
-          Pure lisp crypto, written from specs
-      cryptography
-          implementations of ciphers for cryptography class
-      cryptoschool
-          Lisp files related to the cryptography class being taught by Ben Warner
-      Cryptopsaras
-          Reads files generated by Acinonyx.
-    T
-
- * A symbol (as search-word) is automatically converted into a downcase-string.
- * If option `:d` is on, then the description of the project is printed (QuickDocs-url for Quicklisp-search).
- * The function QUICKSEARCH's options are redundant, but explanatory.
- * The function ?'s options are not explanatory, but minimum.
-
-
-##### URL, Space, Cutoff:
-
-    CL-REPL> (qs:? "crypt" :ug 4) ;<=> (qs:quicksearch "crypt"
-                                  ;                    :?url t :?cut-off 4
-                                  ;                    :?quicklisp nil :?cliki nil :?bitbucket nil)
+    CL-REPL> (qs:? "crypt" :g 4) ;<=> (qs:quicksearch "crypt"
+                                 ;                    :cut-off 4
+                                 ;                    :quicklisp nil :cliki nil :bitbucket nil)
 
     SEARCH-RESULTS: "crypt"
     =======================
@@ -156,19 +163,18 @@ Examples
       .......> 2
     T
 
- * If option `:u` is on, then the project's url is printed.
- * If option `:g` is on, then only github-results are printed
+ * If option `:g` is on, then only GitHub results are printed
    (also `:q` - quicklisp, `:c` - cliki, `:b` - bitbutcket. these options are addable).
  * If cut-off is supplied (above 4), then the number of output results is bellow cut-off
    (the number (above 2) after `.......>` is number of remains).
- * The order of options is nothing to do with search-result
+ * The order of options doesn't change the results.
    (e.g. `:ug 4` <=> `4 :gu` <=> `:u 4 :g` <=> ...).
 
 
 ##### Config:
 
-    CL-REPL> (qs:? 'lisp-koans :du 1) ;<=> (qs:quicksearch 'lisp-koans
-                                      ;                    :?description t :?url t :?cut-off 1)
+    CL-REPL> (qs:? "lisp-koans" 1) ;<=> (qs:quicksearch "lisp-koans"
+                                   ;                     :cut-off 1)
 
     SEARCH-RESULTS: "lisp-koans"
     ============================
@@ -216,7 +222,7 @@ Examples
 Reference Manual
 ----------------
 
-#### [function] QUICKSEARCH _search-word_ _&key_ _?web_ _?description_ _?url_ _?cut-off_ _?quicklisp_ _?cliki_ _?github_ _?bitbucket_
+#### [function] QUICKSEARCH _search-word_ _&key_ _:web_ _:description_ _:url_ _:cut-off_ _:quicklisp_ _:cliki_ _:github_ _:bitbucket_
 
 QUICKSEARCH searches for CL projects with _search-word_ in Quicklisp, Cliki, GitHub and BitBucket.
 _search-word_ must be a string, number or symbol (symbol will be automatically converted into downcase-string).
@@ -224,19 +230,15 @@ _search-word_ must be a string, number or symbol (symbol will be automatically c
 
 ##### Keywords:
 
- * If _?web_ is NIL, it does not search in Cliki, GitHub and BitBucket.
- * If _?quicklisp_ is NIL, it does not search in Quicklisp (also _?cliki_, _?github_, _?bitbucket_).
+ * If _:web_ is NIL, it does not search in Cliki, GitHub and BitBucket.
+ * If _:quicklisp_ is NIL, it does not search in Quicklisp (also _:cliki_, _:github_, _:bitbucket_).
  * At least one search-space must be specified.
- * If _?description_ is T, it displays project's descriptions (QuickDocs-url for Quicklisp-search).
- * If _?url_ is T, it display project's url.
- * _?cut-off_ is the max number of printing repositories each space.
+ * If _:description_ is T, it displays project's descriptions (QuickDocs-url for Quicklisp-search).
+ * If _:url_ is T, it display project's url.
+ * _:cut-off_ is the max number of results to print for each source. It doesn't limit the number of HTTP requests. See the CONFIG for this.
 
 
-##### Note:
-
- * _?cut-off_ controls only printing results,
-   nothing to do with the max number of fetching repositories.
-   see. function CONFIG documentation
+##### Note: about spaces in the search term
 
  * About #\Space in _search-word_:
 
@@ -259,18 +261,18 @@ _options_ must be a non-negative integer (as Cut-Off) and/or some keywords which
 
     (? "crypt")
     <=>
-    (quicksearch "crypt" :?description nil :?url nil :?cut-off 50
-                         :?quicklisp t :?cliki t :?github t :?bitbucket t)
+    (quicksearch "crypt" :description T :url T :cut-off 50
+                         :quicklisp t :cliki t :github t :bitbucket t)
 
     (? "crypt" :du 10)
     <=>
-    (quicksearch "crypt" :?description T :?url T :?cut-off 10
-                         :?quicklisp t :?cliki t :?github t :?bitbucket t)
+    (quicksearch "crypt" :description T :url T :cut-off 10
+                         :quicklisp t :cliki t :github t :bitbucket t)
 
-    (? "crypt" 20 :g :d)
+    (? "crypt" 20 :g)
     <=>
-    (quicksearch "crypt" :?description T :?url nil :?cut-off 20
-                         :?quicklisp nil :?cliki nil :?github T :?bitbucket nil)
+    (quicksearch "crypt" :description T :url T :cut-off 20
+                         :quicklisp nil :cliki nil :github T :bitbucket nil)
 
 
 ##### Options:
@@ -278,13 +280,17 @@ _options_ must be a non-negative integer (as Cut-Off) and/or some keywords which
  * Cut-Off:
    * The max number of printing results (default is 50).
 
- * Option-Chars:
-   * d, D -- output Description (or QuickDocs-url for Quicklisp-search)
-   * u, U -- output URL
-   * q, Q -- search in Quicklisp
-   * c, C -- search in Cliki
-   * g, G -- search in GitHub
-   * b, B -- search in Bitbucket
+ * one-letter options (case doesn't matter):
+   * d -- output Description (or QuickDocs-url for Quicklisp-search) (t by default)
+   * u -- output URL (t by default)
+   * q -- search in Quicklisp
+   * c -- search in Cliki
+   * g -- search in GitHub
+   * b -- search in Bitbucket
+
+NOTE: we changed the default (2024-07) to print the short description and
+project URL, there is currently no keyword to *not* print them. Use
+the global variables or a CONFIG (?).
 
 
 ##### Note:

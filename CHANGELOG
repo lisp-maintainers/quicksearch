@@ -7,9 +7,10 @@ Last modified: 2014-04-13 12:04:58 tkych
 Version dev, on github.com/lisp-maintainers/quicksearch
 
 2024-07-29
+Updated: README with the new defaults and the new keyword parameters.
 Changed: quicksearch and qs:? now print the projects' URL and short desription by default.
          There is no need to specify the :url or (qs:? :ud) parameters anymore.
-         There is also no way to unset these parameters with function arguments, only by using the global `*url-print?*` and `*description-print?*` parameters.
+         There is also no way to unset these parameters with function arguments, only by using the global `*url-print?*` and `*description-print?*` parameters or the CONFIG.
 Changed: the Drakma library is replaced by Dexador for HTTP requests.
 Changed: removed Iterate dependency.
 
