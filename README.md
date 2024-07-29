@@ -24,7 +24,7 @@ Depends-on
  * [alexandria](http://common-lisp.net/project/alexandria/)
  * [anaphora](http://common-lisp.net/project/anaphora/)
  * [cl-ppcre](http://weitz.de/cl-ppcre/)
- * [drakma](http://weitz.de/drakma/)
+ * [dexador](https://github.com/fukamachi/dexador/)
  * [html-entities](https://code.google.com/p/html-entities/)
  * [yason](http://common-lisp.net/project/yason/)
  * [flexi-streams](http://weitz.de/flexi-streams/)

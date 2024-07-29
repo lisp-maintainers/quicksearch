@@ -25,9 +25,17 @@
   :version     "0.1.03"
   :licence     "MIT License"
   :author      "Takaya OCHIAI <tkych.repl@gmail.com>"
-  :depends-on  (#:iterate #:anaphora #:alexandria #:cl-ppcre #:drakma
-                #:yason #:flexi-streams #:do-urlencode #:html-entities
-                #:bordeaux-threads)
+  :depends-on  (#:iterate
+                 #:bordeaux-threads
+                 #:anaphora
+                 #:alexandria
+                 #:cl-ppcre
+                 #:dexador
+                 #:yason
+                 #:flexi-streams
+                 #:do-urlencode
+                 #:html-entities
+                 )
   :components  ((:file "quicksearch"))
   )
 

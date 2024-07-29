@@ -290,9 +290,10 @@ Note:
        &language=common+lisp")
 
 ;; drakma options
-(setf (get 'cliki     :drakma-options) nil
-      (get 'github    :drakma-options) '(:preserve-uri t)
-      (get 'bitbucket :drakma-options) '(:preserve-uri t))
+;; deprecated with dexador.
+;; (setf (get 'cliki     :drakma-options) nil
+;;       (get 'github    :drakma-options) '(:preserve-uri t)
+;;       (get 'bitbucket :drakma-options) '(:preserve-uri t))
 
 
 ;;--------------------------------------------------------------------
@@ -460,9 +461,14 @@ Note:
 ;;   (format nil (get source :query-format)
 ;;           (nsubstitute #\+ #\Space word :test #'char=)))
 
+(defvar *verbose* nil "for development.")
+
 (defun fetch (query source)
-  (apply #'drakma:http-request query
-         :user-agent *user-agent* (get source :drakma-options)))
+  (declare (ignorable source))
+  ;; "source" originally used to add request options with Drakma.
+  (dex:get query
+           :verbose *verbose*
+           :headers `(("User-Agent" . ,*user-agent*))))
 
 
 ;;--------------------------------------
