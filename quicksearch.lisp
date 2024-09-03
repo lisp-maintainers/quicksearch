@@ -196,14 +196,12 @@ Note:
       ;; (Strictly, the following is not the MapReduce,
       ;;  but abstract model is the same if threads are equated with
       ;;  worker nodes.)
-      (let ((drakma:*drakma-default-external-format* :utf-8))
-        ;; (print 'threading) ;for DBG
-        (loop :for source   :in '(cliki github bitbucket)
-           :for search? :in (list cliki github bitbucket) :do
-           (when (and search? (not (in-cache-p word source)))
-             ;; Search word in the web, and Store result into cache.
-             ;; Since each source has its own cache, lock isn't need.
-             (push (search-web-by-thread word source) threads)))))
+      (loop :for source   :in '(cliki github bitbucket)
+            :for search? :in (list cliki github bitbucket) :do
+              (when (and search? (not (in-cache-p word source)))
+                ;; Search word in the web, and Store result into cache.
+                ;; Since each source has its own cache, lock isn't need.
+                (push (search-web-by-thread word source) threads))))
 
     #+quicklisp                         ;for build
     (when quicklisp
