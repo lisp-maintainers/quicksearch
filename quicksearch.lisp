@@ -10,6 +10,7 @@
 (in-package :cl-user)
 
 (defpackage #:quicksearch
+  (:use #:cl)
   (:nicknames #:qs)
   (:import-from #:anaphora
                 #:aif #:awhen #:it)
@@ -78,7 +79,7 @@ Note:
 ;; Main
 ;;--------------------------------------------------------------------
 ;; <word>  ::= <string>
-;; <source> ::= <symbol>, s.t. {quicklisp | github | cliki | bitbucket}
+;; <source> ::= <symbol>, s.t. {quicklisp | github | cliki | bitbucket | codeberg}
 ;; <repo>  ::= (<title> <url> <description>)
 ;; <repos> ::= (<repo>*)
 ;; <title> ::= <string>
@@ -131,14 +132,15 @@ This parameter doesn't control the number of HTTP requests.")
                                   (github       t)
                                   (bitbucket    t)
                                   (?bitbucket   t  ?bitbucket-p)
+                                  (codeberg     t)
+                                  (?codeberg    t  ?codeberg-p)
                                   ;; no impact on the results:
                                   ;; open all results in the browser?
                                   ;; (browse nil)
                                   )
   ;; 2020/03: ?key are deprecated.
-
-  "Search for CL projects with `search-word' in Quicklisp, Cliki, GitHub
-and BitBucket. `search-word' must be a string, number or symbol (symbol
+  "Search for CL projects with `search-word' in Quicklisp, Cliki, GitHub,
+ BitBucket and CodeBerg. `search-word' must be a string, number or symbol (symbol
 will be automatically converted into downcase-string).
 
 QUICKSEARCH accepts arguments in their long form. The function `?' is
@@ -148,7 +150,7 @@ instead of `:url'.
 Keywords:
  * If `web' is NIL, it searches only on Quicklisp and does not search on Cliki, GitHub or BitBucket.
  * If `quicklisp' is NIL, it does not search on Quicklisp (also
-   `cliki', `github', `bitbucket').
+   `cliki', `github', `bitbucket', `codeberg').
  * At least one search-source must be specified.
  * If `description' is T, it displays project's descriptions (except
    for Quicklisp-search).
@@ -162,13 +164,15 @@ Note:
 
  * About #\\Space in `search-word':
    When `search-word' contains a #\\Space, Quicklisp-search is
-   OR-searched, whereas Cliki-search, GitHub- and BitBucket- are AND-searched.
+   OR-searched, whereas Cliki-search, GitHub-, BitBucket- and CodeBerg- are AND-searched.
    e.g. (quicksearch \"foo bar\")
         Quicklisp-search for \"foo\" OR \"bar\",
-        Cliki-search, GitHub-, BitBucket- for \"foo\" AND \"bar\"."
+        Cliki-search, GitHub-, BitBucket-, CodeBerg- for \"foo\" AND \"bar\"."
 
-  (declare (ignore ?web ?description ?url ?cut-off ?quicklisp ?cliki ?github ?bitbucket))
-  (when (or ?web-p ?description-p ?url-p ?cut-off-p ?quicklisp-p ?cliki-p ?github-p ?bitbucket-p)
+  (declare
+   (ignore ?web ?description ?url ?cut-off ?quicklisp ?cliki ?github ?bitbucket ?codeberg))
+  (when
+      (or ?web-p ?description-p ?url-p ?cut-off-p ?quicklisp-p ?cliki-p ?github-p ?bitbucket-p ?codeberg-p)
     (error "Arguments starting with '?' have been deprecated. Please simply use :web, :description, :url, etc."))
   (check-type search-word  (or string symbol))
   (check-type web         boolean)
@@ -179,6 +183,7 @@ Note:
   (check-type cliki       boolean)
   (check-type github      boolean)
   (check-type bitbucket   boolean)
+  (check-type codeberg    boolean)
 
   (let ((*url-print?* url)
         (*description-print?* description)
@@ -188,7 +193,7 @@ Note:
         (*print-title?* nil)   ;no result, no print
         (threads '()))
 
-    (dolist (source '(cliki github bitbucket))
+    (dolist (source '(cliki github bitbucket codeberg))
       (setf (get source :error-report) nil))
 
     (when (and web *threading?* bordeaux-threads:*supports-threads-p*)
@@ -196,8 +201,8 @@ Note:
       ;; (Strictly, the following is not the MapReduce,
       ;;  but abstract model is the same if threads are equated with
       ;;  worker nodes.)
-      (loop :for source   :in '(cliki github bitbucket)
-            :for search? :in (list cliki github bitbucket) :do
+      (loop :for source   :in '(cliki github bitbucket codeberg)
+            :for search? :in (list cliki github bitbucket codeberg) :do
               (when (and search? (not (in-cache-p word source)))
                 ;; Search word in the web, and Store result into cache.
                 ;; Since each source has its own cache, lock isn't need.
@@ -218,8 +223,8 @@ Note:
             ;; (print 'threading) ;for DBG
             (dolist (th threads) (bordeaux-threads:join-thread th))
             (loop
-               :for source   :in '(cliki github bitbucket)
-               :for search? :in (list cliki github bitbucket) :do
+               :for source   :in '(cliki github bitbucket codeberg)
+               :for search? :in (list cliki github bitbucket codeberg) :do
                (when search?
                  (aif (get source :error-report)
                       (progn
@@ -232,8 +237,8 @@ Note:
                           (setf found? t)))))))
 
           (loop                         ;not using threads
-             :for source   :in '(cliki github bitbucket)
-             :for search? :in (list cliki github bitbucket) :do
+             :for source   :in '(cliki github bitbucket codeberg)
+             :for search? :in (list cliki github bitbucket codeberg) :do
              (when search?
                ;; (print 'non-threading) ;for DBG
                (multiple-value-bind
@@ -265,14 +270,16 @@ Note:
 (setf (get 'quicklisp :name) "Quicklisp"
       (get 'cliki     :name) "Cliki"
       (get 'github    :name) "GitHub"
-      (get 'bitbucket :name) "BitBucket")
+      (get 'bitbucket :name) "BitBucket"
+      (get 'codeberg  :name) "CodeBerg")
 
 ;; for print url
 (setf (get 'quicklisp :host) "~A"
       (get 'cliki     :host) "http://www.cliki.net~A"
       (get 'github    :host) "~A"       ;api-v3
       ;; (get 'github    :host) "https://github.com/~A" ;advanced
-      (get 'bitbucket :host) "https://bitbucket.org~A")
+      (get 'bitbucket :host) "https://bitbucket.org~A"
+      (get 'codeberg  :host) "~A")
 
 ;; for generate query
 (setf (get 'cliki :query-format)
@@ -291,6 +298,9 @@ Note:
 (setf (get 'bitbucket :query-format)
       "https://bitbucket.org/repo/all/relevance?name=~A~
        &language=common+lisp")
+
+(setf (get 'codeberg :query-format)
+      "https://codeberg.org/api/v1/repos/search?language=Common%20Lisp&q=~A")
 
 ;; drakma options
 ;; deprecated with dexador.
@@ -382,12 +392,14 @@ Note:
   (setf (get 'github     :cache)
         (make-hash-table :test #'equal :size (1+ *cache-size*)))
   (setf (get 'bitbucket  :cache)
+        (make-hash-table :test #'equal :size (1+ *cache-size*)))
+  (setf (get 'codeberg :cache)
         (make-hash-table :test #'equal :size (1+ *cache-size*))))
 
 (make-cache)
 
 (defun clear-cache ()
-  (dolist (source '(cliki github bitbucket))
+  (dolist (source '(cliki github bitbucket codeberg))
     (clrhash (get source :cache)))
   t)
 
@@ -455,9 +467,10 @@ Note:
 ;; github api-v3 search
 (defun gen-query (word source)
   (format nil (get source :query-format)
-          (if (eq source 'github)
-              (do-urlencode:urlencode word)
-              (nsubstitute #\+ #\Space word :test #'char=))))
+          (cond
+            ((eq source 'github) (do-urlencode:urlencode word))
+            ((eq source 'codeberg) (do-urlencode:urlencode word))
+            (t (substitute #\+ #\Space word :test #'char=)))))
 
 ;; github advanced search
 ;; (defun gen-query (word source)
@@ -481,7 +494,8 @@ Note:
   (case source
     (cliki     (extract-cliki-repos response))
     (github    (extract-github-repos response))
-    (bitbucket (extract-bitbucket-repos response))))
+    (bitbucket (extract-bitbucket-repos response))
+    (codeberg (extract-codeberg-repos response))))
 
 (defun strip (string)
   (string-trim '(#\Space #\Return #\Newline) string))
@@ -569,13 +583,24 @@ Note:
                         ("(?s)<p>(.+?)</p>" repo)
                       (strip (remove-tags description)))))))))
 
+(defun extract-codeberg-repos (response)
+  (let* ((json (yason:parse (response-string response))))
+    (loop :for repo :in (gethash "data" json)
+          :unless (gethash "fork" repo)   ;only master is displayed
+            :collect (list (gethash "name" repo)
+                           (gethash "html_url" repo)
+                           (let ((desc (gethash "description" repo)))
+                             (unless (string= "" desc)
+                               desc))))))
+
 ;;--------------------------------------
 ;; dispatch for extracting next url
 (defun extract-next-page-url (response source)
   (case source
     (cliki     (extract-cliki-next-page-url response))
     (github    (extract-github-next-page-url response))
-    (bitbucket (extract-bitbucket-next-page-url response))))
+    (bitbucket (extract-bitbucket-next-page-url response))
+    (codeberg  (extract-codeberg-next-page-url response))))
 
 (defvar *max-num-web-search-results* 50)
 (defvar *num-results-per-page* 10)
@@ -627,6 +652,9 @@ Note:
       (subseq rest-urls
               0 (min (max-num-next-pages) (length rest-urls))))))
 
+(defun extract-codeberg-next-page-url (response)
+  (declare (ignore response))
+  nil)
 
 ;;--------------------------------------------------------------------
 ;; Print-Results
@@ -875,6 +903,7 @@ Options:
    * c -- search in Cliki
    * g -- search in GitHub
    * b -- search in Bitbucket
+   * o -- search in CodeBerg
 
 Note:
  * Option-Char is idempotent (e.g. :dd <=> :d).
@@ -889,17 +918,17 @@ Examples:
   (? \"crypt\")
   <=>
   (quicksearch \"crypt\" :description nil :url nil :cut-off 50
-                       :quicklisp t :cliki t :github t :bitbucket t)
+                       :quicklisp t :cliki t :github t :bitbucket t :codeberg t)
 
   (? \"crypt\" :du 10)
   <=>
   (quicksearch \"crypt\" :description T :url T :cut-off 10
-                       :quicklisp t :cliki t :github t :bitbucket t)
+                       :quicklisp t :cliki t :github t :bitbucket t :codeberg t)
 
   (? \"crypt\" 20 :g :d)
   <=>
   (quicksearch \"crypt\" :description T :url nil :cut-off 20
-                       :quicklisp nil :cliki nil :github T :bitbucket nil)"
+                       :quicklisp nil :cliki nil :github T :bitbucket nil :codeberg nil)"
 
   (let ((cut-off *cut-off*)
         (d *description-print?*)
@@ -907,7 +936,8 @@ Examples:
         (q nil)
         (c nil)
         (g nil)
-        (b nil))
+        (b nil)
+        (o nil))
     (dolist (opt options)
       (cond ((keywordp opt)
              (loop :for char :across (symbol-name opt) :do
@@ -918,19 +948,20 @@ Examples:
                   ((#\C #\c) (setf c t))
                   ((#\G #\g) (setf g t))
                   ((#\B #\b) (setf b t))
+                  ((#\O #\o) (setf o t))
                   (t         (error "~A is unknown option." char)))))
             ((and (integerp opt) (not (minusp opt)))
              (setf cut-off opt))
             (t
              (error "~S is neither keyword nor non-negative-integer."
                     opt))))
-    (if (or q c g b)
+    (if (or q c g b o)
         (quicksearch search-word
                      :description d :url u :cut-off cut-off
-                     :quicklisp q :cliki c :github g :bitbucket b)
+                     :quicklisp q :cliki c :github g :bitbucket b :codeberg o)
         (quicksearch search-word
                      :description d :url u :cut-off cut-off
-                     :quicklisp T :cliki T :github T :bitbucket T))))
+                     :quicklisp T :cliki T :github T :bitbucket T :codeberg T))))
 
 
 ;;====================================================================
