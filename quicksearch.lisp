@@ -833,7 +833,7 @@ Note:
             (setf result t))
 
           (when max-repos-supplied?
-            (check-type max-repos-supplied? (integer 1 *))
+            (check-type max-repos (integer 1 *))
             (setf *max-num-web-search-results* max-repos)
             (format t "~&Current maximum number of fetching repositories: ~D"
                     *max-num-web-search-results*)
